@@ -1,14 +1,814 @@
-# Android / Gradle Build Artifacts
-.gradle/
-/build/
-/app/build/
-*.iml
-.idea/
-.DS_Store
+```html
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wi-Fi Security Auditor & Simulator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'radar-ping': 'radarPing 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        radarPing: {
+                            '0%': { transform: 'scale(0.8)', opacity: '0.8' },
+                            '100%': { transform: 'scale(2.2)', opacity: '0' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.4' },
+                            '50%': { opacity: '1' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for mobile frame */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 9999px;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased bg-slate-950 text-slate-100 flex flex-col justify-between overflow-x-hidden selection:bg-emerald-500 selection:text-slate-950">
 
-# Local configuration files
-local.properties
-captures/
-.externalNativeBuild/
-.cxx/
-*.log
+    <!-- Header / Navigation Bar -->
+    <header class="w-full border-b border-slate-800 bg-slate-900/80 backdrop-filter backdrop-blur-md sticky top-0 z-30 px-4 py-3">
+        <div class="max-w-6xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-slate-950 font-extrabold shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-wifi text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold leading-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">WiFiSec Auditor Pro</h1>
+                    <p class="text-xs text-slate-400 font-mono">Educational Simulator & Mobile Spec</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleTab('simulator')" id="btn-tab-sim" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-mobile-screen"></i> Mobile App Preview
+                </button>
+                <button onclick="toggleTab('github')" id="btn-tab-git" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all flex items-center gap-2">
+                    <i class="fa-brands fa-github"></i> Build APK (GitHub Guide)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center">
+
+        <!-- TAB 1: MOBILE APP SIMULATOR -->
+        <section id="tab-simulator" class="w-full flex flex-col items-center">
+            
+            <!-- Mobile Shell Container -->
+            <div class="relative w-full max-w-[390px] h-[780px] bg-slate-900 rounded-[48px] p-3 shadow-2xl border-4 border-slate-800 ring-1 ring-slate-700/50 flex flex-col overflow-hidden">
+                
+                <!-- Phone Top Bar Notch / Dynamic Island -->
+                <div class="w-full pt-1 pb-2 px-6 flex justify-between items-center text-xs text-slate-400 font-mono select-none z-20">
+                    <span id="live-time">09:41</span>
+                    <div class="w-24 h-4 bg-slate-950 rounded-full flex items-center justify-center gap-1.5">
+                        <div class="w-2 h-2 rounded-full bg-slate-800"></div>
+                        <div class="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-700"></div>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-[10px]">
+                        <i class="fa-solid fa-signal"></i>
+                        <i class="fa-solid fa-wifi"></i>
+                        <i class="fa-solid fa-battery-full text-emerald-400"></i>
+                    </div>
+                </div>
+
+                <!-- App Screen Outer Wrapper -->
+                <div id="app-viewport" class="relative flex-1 bg-slate-950 rounded-[36px] overflow-hidden flex flex-col justify-between border border-slate-800/80">
+
+                    <!-- APP STATE 1: PERMISSION REQUEST -->
+                    <div id="screen-permission" class="app-screen p-6 flex flex-col justify-between h-full z-10 bg-slate-950">
+                        <div class="pt-6 text-center">
+                            <div class="w-20 h-20 rounded-3xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 mx-auto flex items-center justify-center text-3xl mb-4 shadow-xl shadow-emerald-500/5">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <h2 class="text-xl font-bold text-white mb-2">System Permissions Required</h2>
+                            <p class="text-xs text-slate-400 leading-relaxed px-2">
+                                To scan nearby network access points, this app requires standard <span class="text-emerald-400 font-medium">Wi-Fi Access</span> & <span class="text-emerald-400 font-medium font-mono">ACCESS_FINE_LOCATION</span> permissions as enforced by Android OS.
+                            </p>
+                        </div>
+
+                        <div class="space-y-3 glass-panel p-4 rounded-2xl">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                </div>
+                                <div class="text-left">
+                                    <div class="text-xs font-semibold text-slate-200">Precise Location</div>
+                                    <div class="text-[10px] text-slate-400">Required by Android to detect Wi-Fi BSSID signals</div>
+                                </div>
+                            </div>
+                            <div class="h-[1px] bg-slate-800"></div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center text-sm">
+                                    <i class="fa-solid fa-wifi"></i>
+                                </div>
+                                <div class="text-left">
+                                    <div class="text-xs font-semibold text-slate-200">Wi-Fi Control State</div>
+                                    <div class="text-[10px] text-slate-400">Allows reading network RSSI & status</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2.5 pb-2">
+                            <button onclick="grantPermissions()" class="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold rounded-xl text-sm transition shadow-lg shadow-emerald-500/25 active:scale-[0.98]">
+                                Allow Permissions & Continue
+                            </button>
+                            <button onclick="denyPermissions()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 font-medium rounded-xl text-xs transition border border-slate-800">
+                                Deny (Exit App)
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- APP STATE: APP CLOSED / TERMINATED SCREEN -->
+                    <div id="screen-closed" class="app-screen p-6 flex-col items-center justify-center text-center h-full z-10 bg-slate-950 hidden">
+                        <div class="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 flex items-center justify-center text-2xl mb-4">
+                            <fa-solid class="fa-solid fa-power-off"></fa-solid>
+                        </div>
+                        <h2 class="text-lg font-bold text-slate-200 mb-1">Application Terminated</h2>
+                        <p class="text-xs text-slate-400 max-w-[240px] mb-6">
+                            Permission request declined or legal disclaimer was not accepted. Access was revoked.
+                        </p>
+                        <button onclick="restartSimulator()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-medium rounded-xl text-xs transition border border-slate-700">
+                            <i class="fa-solid fa-rotate-right mr-1.5"></i> Restart Simulator
+                        </button>
+                    </div>
+
+                    <!-- MODAL 1: EDUCATIONAL DISCLAIMER DIALOG (Overlays Dashboard) -->
+                    <div id="modal-disclaimer" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md z-40 p-5 flex items-center justify-center hidden">
+                        <div class="w-full glass-panel border border-amber-500/30 rounded-3xl p-5 shadow-2xl text-center flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-200">
+                            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mx-auto flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="space-y-2">
+                                <h3 class="text-sm font-extrabold uppercase tracking-wider text-amber-400">Legal Warning</h3>
+                                <p class="text-xs font-bold text-slate-100 uppercase leading-relaxed tracking-wide bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl font-mono">
+                                    "FOR EDUCATIONAL USE ONLY. TEST THE SECURITY OF YOUR OWN WIFI ROUTER ONLY. ANY MISUSE FOR ILLEGAL ACTIVITY IS STRICTLY PROHIBITED."
+                                </p>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2.5 pt-1">
+                                <button onclick="declineDisclaimer()" class="py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold rounded-xl text-xs transition">
+                                    Decline
+                                </button>
+                                <button onclick="acceptDisclaimer()" class="py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs shadow-lg shadow-emerald-500/20 transition">
+                                    Accept
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- APP STATE 2: MAIN DASHBOARD -->
+                    <div id="screen-dashboard" class="app-screen p-5 flex flex-col justify-between h-full z-10 bg-slate-950 hidden">
+                        <!-- Header Bar -->
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] uppercase font-mono tracking-widest text-emerald-400 font-semibold">Security Console</span>
+                                <h2 class="text-lg font-bold text-white">Wi-Fi Auditor</h2>
+                            </div>
+                            <button onclick="showSuggestionsModal()" class="w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white flex items-center justify-center text-sm transition">
+                                <i class="fa-solid fa-lightbulb"></i>
+                            </button>
+                        </div>
+
+                        <!-- Radar Scan Area -->
+                        <div class="relative py-8 flex flex-col items-center justify-center">
+                            
+                            <!-- Radar Waves Background Animation -->
+                            <div id="radar-pulse" class="absolute w-56 h-56 rounded-full border border-emerald-500/20 bg-emerald-500/5 animate-radar-ping hidden"></div>
+                            <div class="absolute w-44 h-44 rounded-full border border-emerald-500/20"></div>
+                            <div class="absolute w-64 h-64 rounded-full border border-slate-800"></div>
+
+                            <!-- BIG CIRCLE SCAN BUTTON -->
+                            <button id="btn-main-scan" onclick="startScanningProcess()" class="relative z-10 w-40 h-40 rounded-full bg-gradient-to-tr from-slate-900 via-slate-850 to-slate-900 border-4 border-emerald-500/40 shadow-2xl shadow-emerald-500/20 flex flex-col items-center justify-center gap-2 group hover:border-emerald-400 active:scale-95 transition-all">
+                                <div class="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                                    <i id="scan-icon" class="fa-solid fa-radar"></i>
+                                </div>
+                                <span id="scan-text" class="text-xs font-bold tracking-widest uppercase text-emerald-400">SCAN</span>
+                            </button>
+
+                            <p id="scan-status" class="mt-6 text-xs text-slate-400 font-mono text-center">Tap button to search networks in range</p>
+                        </div>
+
+                        <!-- Secondary Action: Suggestions -->
+                        <div class="space-y-2">
+                            <button onclick="showSuggestionsModal()" class="w-full p-3.5 bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-2xl flex items-center justify-between group transition">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-shield-cat"></i>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="text-xs font-bold text-slate-200">Wi-Fi Security Suggestions</div>
+                                        <div class="text-[10px] text-slate-400">Router hardening guidelines</div>
+                                    </div>
+                                </div>
+                                <i class="fa-solid fa-chevron-right text-xs text-slate-600 group-hover:text-slate-400 transition-colors"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- MODAL 2: SECURITY SUGGESTIONS DIALOG -->
+                    <div id="modal-suggestions" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-40 p-5 flex items-center justify-center hidden">
+                        <div class="w-full h-full max-h-[90%] glass-panel border border-slate-800 rounded-3xl p-5 shadow-2xl flex flex-col justify-between overflow-y-auto">
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                        <i class="fa-solid fa-lightbulb text-amber-400"></i> Router Hardening Tips
+                                    </h3>
+                                    <button onclick="closeSuggestionsModal()" class="text-slate-400 hover:text-white text-base">
+                                        <i class="fa-solid fa-xmark"></i>
+                                    </button>
+                                </div>
+                                <div class="space-y-3 text-xs text-slate-300">
+                                    <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                                        <span class="font-bold text-emerald-400 block mb-1">1. Upgrade to WPA3 Standard</span>
+                                        WPA3 protects against offline dictionary attacks by employing SAE (Simultaneous Authentication of Equals).
+                                    </div>
+                                    <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                                        <span class="font-bold text-emerald-400 block mb-1">2. Strong Passphrase Structure</span>
+                                        Use at least 16+ characters combining symbols, digits, and upper/lower case letters to make wordlist cracking ineffective.
+                                    </div>
+                                    <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                                        <span class="font-bold text-emerald-400 block mb-1">3. Disable WPS (Wi-Fi Protected Setup)</span>
+                                        WPS PIN mechanisms contain structural flaws allowing easy brute-force attacks within hours.
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="closeSuggestionsModal()" class="w-full mt-4 py-2.5 bg-slate-800 text-slate-200 font-bold rounded-xl text-xs hover:bg-slate-700 transition">
+                                Got It
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- APP STATE 3: DISCOVERED WI-FI LIST -->
+                    <div id="screen-wifilist" class="app-screen p-5 flex flex-col justify-between h-full z-10 bg-slate-950 hidden">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <div>
+                                    <h2 class="text-sm font-bold text-white">Discovered Access Points</h2>
+                                    <p class="text-[10px] text-slate-400 font-mono">Sorted by Signal Strength (-dBm)</p>
+                                </div>
+                                <span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono rounded-lg">
+                                    <span id="wifi-count">0</span> Found
+                                </span>
+                            </div>
+
+                            <!-- Interactive List of Detected Networks -->
+                            <div id="wifi-items-container" class="space-y-2.5 max-h-[500px] overflow-y-auto pr-1">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <button onclick="goBackToDashboard()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-400 font-medium rounded-xl text-xs transition border border-slate-800 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-arrow-left"></i> Rescan Networks
+                        </button>
+                    </div>
+
+                    <!-- MODAL 3: TARGET AGREEMENT DIALOG (3 sec delay on buttons) -->
+                    <div id="modal-target-agreement" class="absolute inset-0 bg-slate-950/90 backdrop-blur-md z-40 p-5 flex items-center justify-center hidden">
+                        <div class="w-full glass-panel border border-slate-700 rounded-3xl p-5 shadow-2xl text-center flex flex-col gap-4">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mx-auto flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-handshake-angle"></i>
+                            </div>
+
+                            <div>
+                                <h3 class="text-sm font-bold text-white mb-1">Target Ownership Verification</h3>
+                                <p class="text-xs text-slate-300 leading-relaxed font-medium bg-slate-900 p-3 rounded-xl border border-slate-800">
+                                    "You didn't use for illegal purpose - it's only for your own router."
+                                </p>
+                            </div>
+
+                            <!-- Target info details -->
+                            <div id="target-summary-box" class="text-left font-mono text-[11px] bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1">
+                                <!-- Populated dynamically -->
+                            </div>
+
+                            <!-- Buttons container - Hidden for 3 seconds -->
+                            <div id="target-agreement-timer-msg" class="text-[11px] text-amber-400 font-mono flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-spinner animate-spin"></i> Confirming safety compliance (3s)...
+                            </div>
+
+                            <div id="target-agreement-buttons" class="grid grid-cols-1 gap-2 hidden">
+                                <button onclick="acceptTargetOwnership()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20">
+                                    Yes, it's my own router (Continue)
+                                </button>
+                                <button onclick="declineDisclaimer()" class="w-full py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 font-semibold rounded-xl text-xs transition">
+                                    Decline (Exit App)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- APP STATE 4: WORDLIST ATTACK SIMULATOR -->
+                    <div id="screen-attack" class="app-screen p-5 flex flex-col justify-between h-full z-10 bg-slate-950 hidden">
+                        
+                        <!-- Header -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></div>
+                                    <h2 class="text-xs font-bold text-white">Audit Session Active</h2>
+                                </div>
+                                <span id="attack-ssid-tag" class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-emerald-400 font-bold">
+                                    Target: Net
+                                </span>
+                            </div>
+
+                            <!-- Wordlist File Selection Component -->
+                            <div class="p-3 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2 mb-3">
+                                <label class="block text-[11px] font-semibold text-slate-300">
+                                    <i class="fa-solid fa-file-lines text-slate-400 mr-1"></i> Dictionary Wordlist:
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <input type="file" id="wordlist-file-input" class="hidden" onchange="handleWordlistUpload(event)">
+                                    <button onclick="document.getElementById('wordlist-file-input').click()" class="flex-1 py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-mono rounded-lg border border-slate-700 transition truncate text-left">
+                                        <i class="fa-solid fa-upload text-emerald-400 mr-1.5"></i> <span id="wordlist-filename">Custom_Wordlist.txt (Default)</span>
+                                    </button>
+                                    <span id="wordlist-count-badge" class="text-[10px] font-mono px-2 py-1 bg-indigo-500/10 text-indigo-400 rounded-md border border-indigo-500/20">
+                                        8 Keys
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Terminal Audit Console Output -->
+                            <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 font-mono text-[11px] h-[260px] flex flex-col justify-between">
+                                <div id="terminal-logs" class="overflow-y-auto space-y-1.5 pr-1 text-slate-400 h-full">
+                                    <!-- Dynamic real-time logs will be appended here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar & Matched Status Area -->
+                        <div class="space-y-3">
+                            <div class="space-y-1">
+                                <div class="flex justify-between text-[10px] font-mono text-slate-400">
+                                    <span>Progress: <span id="attack-progress-percent">0%</span></span>
+                                    <span id="attack-rate">0 keys/sec</span>
+                                </div>
+                                <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-800">
+                                    <div id="attack-progress-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full w-0 transition-all duration-300"></div>
+                                </div>
+                            </div>
+
+                            <!-- Key Matched Display Box -->
+                            <div id="matched-password-box" class="p-3 bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-center hidden animate-in fade-in zoom-in-95">
+                                <span class="text-[10px] font-mono uppercase text-slate-400 block tracking-wider mb-1">Key Match Confirmed</span>
+                                <div id="matched-password-text" class="text-base font-extrabold text-emerald-400 font-mono tracking-widest break-all">
+                                    PASSWORD123
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="grid grid-cols-1 gap-2">
+                                <button id="btn-start-attack" onclick="startWordlistAttack()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs transition shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-play"></i> Start Password Combination Test
+                                </button>
+                                <button id="btn-back-home" onclick="goBackToDashboard()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold rounded-xl text-xs transition border border-slate-800 hidden flex items-center justify-center gap-2">
+                                    <i class="fa-solid fa-rotate-left"></i> Back to First Screen
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Phone Bottom Bar Home Indicator -->
+                <div class="w-full pt-2 flex justify-center">
+                    <div class="w-32 h-1 bg-slate-700/60 rounded-full"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- TAB 2: APK GENERATION GUIDE & CODE SPEC -->
+        <section id="tab-github" class="w-full space-y-6 hidden">
+            
+            <div class="glass-panel p-6 rounded-3xl border border-slate-800">
+                <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                    <i class="fa-brands fa-github text-emerald-400"></i> Android APK Build & Release Workflow (GitHub Actions)
+                </h2>
+                <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                    To package this mobile application into a installable Android <span class="font-mono text-emerald-400">.apk</span> release, standard React Native framework components are structured below alongside the automated GitHub workflow pipeline file (<span class="font-mono text-indigo-400">.github/workflows/build-apk.yml</span>).
+                </p>
+
+                <!-- Step-by-Step GitHub Release setup -->
+                <div class="space-y-4">
+                    <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="text-xs font-bold text-emerald-400 font-mono">1. GitHub Action Workflow YAML (`.github/workflows/build-apk.yml`)</div>
+                        <pre class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
+<code>name: Build Android APK Release
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Node.js Environment
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Dependencies
+        run: yarn install
+
+      - name: Build Android Release APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: WiFiSec-Auditor-Release
+          path: android/app/build/outputs/apk/release/app-release.apk</code></pre>
+                    </div>
+
+                    <div class="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+                        <div class="text-xs font-bold text-emerald-400 font-mono">2. Android Native Permissions (`android/app/src/main/AndroidManifest.xml`)</div>
+                        <p class="text-xs text-slate-400">Must include these hardware permission declarations for Wi-Fi scanning on Android mobile targets:</p>
+                        <pre class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
+<code>&lt;uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" /&gt;
+&lt;uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" /&gt;
+&lt;uses-permission android:name="android.permission.ACCESS_WIFI_STATE" /&gt;
+&lt;uses-permission android:name="android.permission.CHANGE_WIFI_STATE" /&gt;
+&lt;uses-permission android:name="android.permission.INTERNET" /&gt;</code></pre>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800 py-3 text-center text-[11px] text-slate-500 font-mono">
+        Educational Wi-Fi Security Tool • For Authorized Router Auditing Only
+    </footer>
+
+    <!-- JavaScript Logic & App State Machine -->
+    <script>
+        // State Machine Storage
+        const state = {
+            permissionsGranted: false,
+            disclaimerAccepted: false,
+            selectedWifi: null,
+            customWordlist: [
+                "12345678",
+                "admin123",
+                "password",
+                "wifi2024!",
+                "homepass99",
+                "securesolute1",
+                "myrouter@key",
+                "router2026!"
+            ],
+            isScanning: false,
+            isAttacking: false
+        };
+
+        // Simulated Wi-Fi Networks Data (Sorted by dBm speed/signal strength)
+        const mockWifiNetworks = [
+            { ssid: "HomeNet_5G_Ext", signalDbm: -42, security: "WPA2-PSK", bssid: "E4:8D:8C:11:A2:90", correctPass: "securesolute1" },
+            { ssid: "Fiber_Guest_WiFi", signalDbm: -58, security: "WPA2/WPA3", bssid: "00:9A:CD:44:12:FF", correctPass: "myrouter@key" },
+            { ssid: "TP-Link_Secure_Office", signalDbm: -67, security: "WPA2-PSK", bssid: "C8:3A:35:89:33:10", correctPass: "router2026!" },
+            { ssid: "Asus_Gaming_Router", signalDbm: -75, security: "WPA2-PSK", bssid: "34:97:F6:12:88:BB", correctPass: "12345678" },
+            { ssid: "Neighborhood_Node", signalDbm: -88, security: "WPA2-PSK", bssid: "BC:D1:D3:55:77:AA", correctPass: "password" }
+        ];
+
+        // Screen Navigation Handler
+        function showScreen(screenId) {
+            document.querySelectorAll('.app-screen').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(screenId);
+            if (target) {
+                target.classList.remove('hidden');
+            }
+        }
+
+        // Live Clock Timer for Phone Mockup
+        function updateClock() {
+            const now = new Date();
+            const hrs = String(now.getHours()).padStart(2, '0');
+            const mins = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('live-time').innerText = `${hrs}:${mins}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Step 1: Permission Logic
+        function grantPermissions() {
+            state.permissionsGranted = true;
+            showScreen('screen-dashboard');
+            document.getElementById('modal-disclaimer').classList.remove('hidden');
+        }
+
+        function denyPermissions() {
+            state.permissionsGranted = false;
+            showScreen('screen-closed');
+        }
+
+        function restartSimulator() {
+            state.permissionsGranted = false;
+            state.disclaimerAccepted = false;
+            showScreen('screen-permission');
+        }
+
+        // Step 2: Disclaimer Logic
+        function acceptDisclaimer() {
+            state.disclaimerAccepted = true;
+            document.getElementById('modal-disclaimer').classList.add('hidden');
+        }
+
+        function declineDisclaimer() {
+            state.disclaimerAccepted = false;
+            document.getElementById('modal-disclaimer').classList.add('hidden');
+            document.getElementById('modal-target-agreement').classList.add('hidden');
+            showScreen('screen-closed');
+        }
+
+        // Suggestions Modal Logic
+        function showSuggestionsModal() {
+            document.getElementById('modal-suggestions').classList.remove('hidden');
+        }
+        function closeSuggestionsModal() {
+            document.getElementById('modal-suggestions').classList.add('hidden');
+        }
+
+        // Step 3: Scanning Process Simulation
+        function startScanningProcess() {
+            if (state.isScanning) return;
+            state.isScanning = true;
+
+            const scanIcon = document.getElementById('scan-icon');
+            const scanText = document.getElementById('scan-text');
+            const scanStatus = document.getElementById('scan-status');
+            const radarPulse = document.getElementById('radar-pulse');
+
+            scanIcon.classList.add('animate-spin');
+            scanText.innerText = "SCANNING";
+            scanStatus.innerText = "Scanning frequencies 2.4GHz & 5GHz...";
+            radarPulse.classList.remove('hidden');
+
+            setTimeout(() => {
+                state.isScanning = false;
+                scanIcon.classList.remove('animate-spin');
+                scanText.innerText = "SCAN";
+                scanStatus.innerText = "Tap button to search networks in range";
+                radarPulse.classList.add('hidden');
+
+                renderWifiList();
+                showScreen('screen-wifilist');
+            }, 2200);
+        }
+
+        // Step 4: Render Wi-Fi List dynamically sorted by speed (-dBm)
+        function renderWifiList() {
+            const container = document.getElementById('wifi-items-container');
+            const wifiCount = document.getElementById('wifi-count');
+            container.innerHTML = '';
+
+            // Sort by signal strength (-dBm closer to 0 is stronger)
+            const sorted = [...mockWifiNetworks].sort((a, b) => b.signalDbm - a.signalDbm);
+            wifiCount.innerText = sorted.length;
+
+            sorted.forEach(wifi => {
+                const btn = document.createElement('button');
+                btn.className = "w-full p-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 rounded-2xl flex items-center justify-between text-left transition group active:scale-[0.98]";
+                
+                // Signal Icon calculation
+                let signalIcon = "fa-wifi";
+                let signalColor = "text-emerald-400";
+                if (wifi.signalDbm < -70) {
+                    signalColor = "text-amber-400";
+                } else if (wifi.signalDbm < -80) {
+                    signalColor = "text-rose-400";
+                }
+
+                btn.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center ${signalColor} text-sm">
+                            <i class="fa-solid ${signalIcon}"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors">${wifi.ssid}</div>
+                            <div class="text-[10px] text-slate-400 font-mono">${wifi.security} • ${wifi.bssid}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-mono font-bold ${signalColor}">${wifi.signalDbm} dBm</span>
+                        <span class="block text-[9px] text-slate-500 uppercase tracking-widest font-mono">Signal</span>
+                    </div>
+                `;
+
+                btn.onclick = () => promptTargetAgreement(wifi);
+                container.appendChild(btn);
+            });
+        }
+
+        // Step 5: Target Ownership Agreement Modal with 3-Second Timer
+        function promptTargetAgreement(wifi) {
+            state.selectedWifi = wifi;
+            const modal = document.getElementById('modal-target-agreement');
+            const summaryBox = document.getElementById('target-summary-box');
+            const timerMsg = document.getElementById('target-agreement-timer-msg');
+            const btnBox = document.getElementById('target-agreement-buttons');
+
+            summaryBox.innerHTML = `
+                <div><span class="text-slate-500">SSID:</span> <span class="text-emerald-400 font-bold">${wifi.ssid}</span></div>
+                <div><span class="text-slate-500">BSSID:</span> <span class="text-slate-300">${wifi.bssid}</span></div>
+                <div><span class="text-slate-500">Signal:</span> <span class="text-slate-300">${wifi.signalDbm} dBm</span></div>
+            `;
+
+            timerMsg.classList.remove('hidden');
+            btnBox.classList.add('hidden');
+            modal.classList.remove('hidden');
+
+            // 3-Second Delay before options are revealed
+            setTimeout(() => {
+                timerMsg.classList.add('hidden');
+                btnBox.classList.remove('hidden');
+            }, 3000);
+        }
+
+        function acceptTargetOwnership() {
+            document.getElementById('modal-target-agreement').classList.add('hidden');
+            setupAttackScreen();
+            showScreen('screen-attack');
+        }
+
+        // Step 6: Wordlist Attack Setup & Custom File Handler
+        function setupAttackScreen() {
+            const wifi = state.selectedWifi;
+            document.getElementById('attack-ssid-tag').innerText = `Target: ${wifi.ssid}`;
+            document.getElementById('terminal-logs').innerHTML = `<div class="text-slate-500">[INFO] Audit session initialized for SSID: ${wifi.ssid} (${wifi.bssid})</div>`;
+            
+            // Reset Progress state
+            document.getElementById('attack-progress-bar').style.width = '0%';
+            document.getElementById('attack-progress-percent').innerText = '0%';
+            document.getElementById('attack-rate').innerText = '0 keys/sec';
+            document.getElementById('matched-password-box').classList.add('hidden');
+            document.getElementById('btn-start-attack').classList.remove('hidden');
+            document.getElementById('btn-back-home').classList.add('hidden');
+        }
+
+        function handleWordlistUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+                if (lines.length > 0) {
+                    state.customWordlist = lines;
+                    document.getElementById('wordlist-filename').innerText = file.name;
+                    document.getElementById('wordlist-count-badge').innerText = `${lines.length} Keys`;
+                    
+                    const logs = document.getElementById('terminal-logs');
+                    logs.innerHTML += `<div class="text-indigo-400">[SYSTEM] Custom wordlist parsed: ${lines.length} entries loaded.</div>`;
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Real-time Wordlist Attack Simulator Execution
+        function startWordlistAttack() {
+            if (state.isAttacking) return;
+            state.isAttacking = true;
+
+            const btnStart = document.getElementById('btn-start-attack');
+            btnStart.disabled = true;
+            btnStart.classList.add('opacity-50');
+
+            const targetWifi = state.selectedWifi;
+            const wordlist = [...state.customWordlist];
+            
+            // Ensure target's key is in array so simulation succeeds
+            if (!wordlist.includes(targetWifi.correctPass)) {
+                wordlist.push(targetWifi.correctPass);
+            }
+
+            const total = wordlist.length;
+            let index = 0;
+            const logsContainer = document.getElementById('terminal-logs');
+            const progressBar = document.getElementById('attack-progress-bar');
+            const progressPercent = document.getElementById('attack-progress-percent');
+            const attackRate = document.getElementById('attack-rate');
+
+            const interval = setInterval(() => {
+                if (index >= total) {
+                    clearInterval(interval);
+                    return;
+                }
+
+                const currentKey = wordlist[index];
+                const pct = Math.round(((index + 1) / total) * 100);
+
+                progressBar.style.width = `${pct}%`;
+                progressPercent.innerText = `${pct}%`;
+                attackRate.innerText = `${Math.floor(Math.random() * 4) + 8} keys/s`;
+
+                // Append Attempt Log
+                const isMatch = (currentKey === targetWifi.correctPass);
+                const logItem = document.createElement('div');
+
+                if (isMatch) {
+                    // Match Found State
+                    logItem.className = "text-emerald-400 font-bold bg-emerald-500/10 p-1.5 rounded border border-emerald-500/30";
+                    logItem.innerHTML = `[SUCCESS] WPA2 Handshake Verified! Key Matched: "${currentKey}"`;
+                    logsContainer.appendChild(logItem);
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+
+                    // Display Key in Green Wording
+                    document.getElementById('matched-password-text').innerText = currentKey;
+                    document.getElementById('matched-password-box').classList.remove('hidden');
+
+                    // End Session & Show Back Button
+                    clearInterval(interval);
+                    state.isAttacking = false;
+                    btnStart.classList.add('hidden');
+                    document.getElementById('btn-back-home').classList.remove('hidden');
+                } else {
+                    logItem.className = "text-slate-400";
+                    logItem.innerText = `[TRY ${index + 1}/${total}] Testing passphrase: "${currentKey}" -> Invalid`;
+                    logsContainer.appendChild(logItem);
+                    logsContainer.scrollTop = logsContainer.scrollHeight;
+                }
+
+                index++;
+            }, 600);
+        }
+
+        // Step 7: Back Navigation to First Screen
+        function goBackToDashboard() {
+            state.isAttacking = false;
+            showScreen('screen-dashboard');
+        }
+
+        // Top Navigation Tab Switching
+        function toggleTab(tab) {
+            const simTab = document.getElementById('tab-simulator');
+            const gitTab = document.getElementById('tab-github');
+            const btnSim = document.getElementById('btn-tab-sim');
+            const btnGit = document.getElementById('btn-tab-git');
+
+            if (tab === 'simulator') {
+                simTab.classList.remove('hidden');
+                gitTab.classList.add('hidden');
+                btnSim.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2";
+                btnGit.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all flex items-center gap-2";
+            } else {
+                simTab.classList.add('hidden');
+                gitTab.classList.remove('hidden');
+                btnGit.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2";
+                btnSim.className = "px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 transition-all flex items-center gap-2";
+            }
+        }
+    </script>
+</body>
+</html>
+```
