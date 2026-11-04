@@ -1,0 +1,14 @@
+# Android / Gradle Build Artifacts
+.gradle/
+/build/
+/app/build/
+*.iml
+.idea/
+.DS_Store
+
+# Local configuration files
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+*.log
